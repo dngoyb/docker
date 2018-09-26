@@ -10,3 +10,6 @@ RUN DEBIAN_FRONTEND=noninteractive \
 	&& rm -rf *.tar \
 	&& apt-get autoremove -y && apt-get clean
 CMD ["sh", "teamspeak3-server_linux_amd64/ts3server_minimal_runscript.sh"]
+
+#docker build -t ex01 .
+#docker run -it --rm --name niceone ex01 

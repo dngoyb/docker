@@ -1,0 +1,41 @@
+FROM golang
+
+MAINTAINER "Ngoy Banza <dngoyb@gmail.com>"
+
+RUN apt-get -y update && apt-get upgrade -y \
+		&& apt-get -y install wget git bzip2 gcc \
+		&& apt-get install libpam0g-dev
+
+#RUN adduser --disabled-login --gecos 'Gogs' git
+#USER git
+
+#install go
+
+WORKDIR /homne/git
+RUN  mkdir -p local
+RUN wget https://dl.google.com/go/go1.11.linux-amd64.tar.gz \
+ 	&& tar -C /home/git/local -xzf *.tar.gz
+
+#setup environment
+
+ENV GOROOT=/home/git/local/go
+ENV GOPATH=/home/git/go
+ENV PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+
+#Download gogs
+
+RUN mkdir -p  $GOPATH/src/github.com/gogits \
+		&& cd $GOPATH/src/github.com/gogits \
+		&& git clone --depth=1 -b develop https://github.com/gogits/gogs \
+		&& cd gogs && go build
+
+WORKDIR $GOPATH/src/github.com/gogits/gogs
+RUN go get -u -tags "sqlite pam cert" github.com/gogits/gogs \
+	&& go build -tags "sqlite pam cert"
+
+EXPOSE 3000
+
+USER root
+ 
+WORKDIR $GOPATH/src/github.com/gogits/gogs
+ENTRYPOINT ./gogs web

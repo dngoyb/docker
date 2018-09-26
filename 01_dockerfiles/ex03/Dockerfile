@@ -1,36 +1,49 @@
 FROM golang
 
-RUN apt-get update -y &&\
-	apt-get upgrade -y &&\
-	apt-get install git gcc wget -y &&\
-	apt-get install libpam0g-dev -y
+MAINTAINER  Ngoy Banza <dngoyb@gmail.com>
 
-EXPOSE 3000
+RUN apt-get update -y && apt-get upgrade -y \
+	&& apt-get install git wget bzip2 -y
 
 RUN adduser --disabled-login --gecos 'Gogs' git
 USER git
 
 WORKDIR /home/git
-RUN mkdir -p local
 
-RUN wget https://storage.googleapis.com/golang/go1.10.linux-amd64.tar.gz &&\
-	tar -C /home/git/local -xzf go1.10.linux-amd64.tar.gz
+EXPOSE 3000
+
+#Download and untar Go source code 
+
+RUN mkdir -p local \
+	&& wget https://dl.google.com/go/go1.11.linux-amd64.tar.gz \
+	&& tar -C /home/git/local -xzf *.tar.gz
+
+#Set environments
 
 ENV GOROOT=/home/git/local/go
 ENV GOPATH=/home/git/go
 ENV PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
-RUN mkdir -p $GOPATH/src/github.com/gogits &&\
-	cd $GOPATH/src/github.com/gogits &&\
-	git clone --depth=1 -b develop https://github.com/gogits/gogs &&\
-	cd gogs &&\
-	go build
+#Install Go 
+#Build from develop branch
 
-WORKDIR $GOPATH/src/github.com/gogits/gogs
-RUN go get -u -tags "sqlite pam cert" github.com/gogits/gogs &&\
-	go build -tags "sqlite pam cert"
+RUN mkdir -p  $GOPATH/src/github.com/gogs \
+	&& cd $GOPATH/src/github.com/gogs \
+	&& git clone --depth=1 -b develop https://github.com/gogs/gogs \
+	&& cd gogs \
+	&& go build
 
+#adding sql tags
+
+RUN go get -u -tags "sqlite" github.com/gogs/gogs \
+	&& cd $GOPATH/src/github.com/gogs/gogs \
+	&& go build -tags "sqlite"
+
+#Git user sudo access
 USER root
 
-WORKDIR $GOPATH/src/github.com/gogits/gogs
-ENTRYPOINT ["./gogs", "web"]
+WORKDIR $GOPATH/src/github.com/gogs/gogs
+CMD ["./gogs", "web"]
+
+#docker build -t gogs .
+#docker run -it --rm --name yes gogs
